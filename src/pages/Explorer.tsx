@@ -3,13 +3,9 @@ import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MapPin, Home, TrendingUp, DollarSign, Filter, Search } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { InteractiveMap } from "@/components/InteractiveMap";
-import { PropertyDetailsModal, Property } from "@/components/PropertyDetailsModal";
-import { sampleProperties } from "@/data/properties";
 
 const rentDistribution = [
   { range: "0-20k", count: 450 },
@@ -30,14 +26,6 @@ const Explorer = () => {
   const [rentRange, setRentRange] = useState([10000, 80000]);
   const [location, setLocation] = useState("all");
   const [bhkType, setBhkType] = useState("all");
-  const [mapboxToken, setMapboxToken] = useState("");
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const handlePropertyClick = (property: Property) => {
-    setSelectedProperty(property);
-    setIsModalOpen(true);
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -134,35 +122,16 @@ const Explorer = () => {
           <div className="space-y-6 lg:col-span-3">
             {/* Map Section */}
             <Card className="border-border/50 bg-card/60 p-6 backdrop-blur-xl">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="flex items-center gap-2 text-xl font-bold text-secondary">
-                  <MapPin className="h-5 w-5" />
-                  Interactive Map
-                </h3>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="text"
-                    placeholder="Enter Mapbox Token"
-                    value={mapboxToken}
-                    onChange={(e) => setMapboxToken(e.target.value)}
-                    className="w-64 bg-muted border-border/50"
-                  />
-                  <a 
-                    href="https://mapbox.com" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-xs text-secondary hover:underline"
-                  >
-                    Get Token
-                  </a>
+              <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-secondary">
+                <MapPin className="h-5 w-5" />
+                Interactive Map
+              </h3>
+              <div className="flex h-[400px] items-center justify-center rounded-xl bg-muted/50">
+                <div className="text-center">
+                  <MapPin className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+                  <p className="text-lg font-semibold text-muted-foreground">Map Visualization</p>
+                  <p className="text-sm text-muted-foreground">Interactive map would be displayed here</p>
                 </div>
-              </div>
-              <div className="h-[400px] rounded-xl overflow-hidden">
-                <InteractiveMap 
-                  properties={sampleProperties}
-                  onPropertyClick={handlePropertyClick}
-                  mapboxToken={mapboxToken}
-                />
               </div>
             </Card>
 
@@ -229,12 +198,6 @@ const Explorer = () => {
           </div>
         </div>
       </div>
-
-      <PropertyDetailsModal 
-        property={selectedProperty}
-        open={isModalOpen}
-        onOpenChange={setIsModalOpen}
-      />
     </div>
   );
 };
