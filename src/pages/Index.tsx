@@ -2,10 +2,18 @@ import { Header } from "@/components/Header";
 import { MetricCard } from "@/components/MetricCard";
 import { FeatureCard } from "@/components/FeatureCard";
 import { Button } from "@/components/ui/button";
-import { Home, TrendingUp, MapPin, Users, Map, BarChart3, Search, Filter, Bell, Zap } from "lucide-react";
+import { Home, TrendingUp, MapPin, Users, Map, BarChart3, Search, Filter, Bell, Zap, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { usePropertyData } from "@/hooks/usePropertyData";
 
 const Index = () => {
+  const { properties, loading } = usePropertyData();
+
+  const totalProperties = properties.length;
+  const avgRent = Math.round(properties.reduce((sum, p) => sum + p.price, 0) / totalProperties) || 0;
+  const uniqueLocations = new Set(properties.map(p => p.location)).size;
+  const avgPricePerSqft = Math.round(properties.reduce((sum, p) => sum + p.price_per_sqft, 0) / totalProperties) || 0;
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -49,36 +57,42 @@ const Index = () => {
           <h2 className="mb-2 text-3xl font-bold text-foreground">Market Overview</h2>
           <p className="text-muted-foreground">Real-time rental market statistics</p>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <MetricCard
-            icon={Home}
-            label="Active Listings"
-            value="2,547"
-            trend="+12% from last month"
-            trendUp={true}
-          />
-          <MetricCard
-            icon={TrendingUp}
-            label="Average Rent"
-            value="₹45,000"
-            trend="+5% from last month"
-            trendUp={true}
-          />
-          <MetricCard
-            icon={MapPin}
-            label="Areas Covered"
-            value="156"
-            trend="3 new this week"
-            trendUp={true}
-          />
-          <MetricCard
-            icon={Users}
-            label="Active Users"
-            value="8,942"
-            trend="+23% this month"
-            trendUp={true}
-          />
-        </div>
+        {loading ? (
+          <div className="flex justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              icon={Home}
+              label="Active Listings"
+              value={totalProperties.toString()}
+              trend="Live data"
+              trendUp={true}
+            />
+            <MetricCard
+              icon={TrendingUp}
+              label="Average Rent"
+              value={`₹${avgRent.toLocaleString()}`}
+              trend="Per month"
+              trendUp={true}
+            />
+            <MetricCard
+              icon={MapPin}
+              label="Areas Covered"
+              value={uniqueLocations.toString()}
+              trend="Locations"
+              trendUp={true}
+            />
+            <MetricCard
+              icon={Users}
+              label="Price per Sqft"
+              value={`₹${avgPricePerSqft}`}
+              trend="Average"
+              trendUp={true}
+            />
+          </div>
+        )}
       </section>
 
       {/* Features Section */}
@@ -91,61 +105,51 @@ const Index = () => {
           <FeatureCard
             icon={Map}
             title="Interactive Maps"
-            description="Explore properties on an interactive map with heatmaps, clusters, and detailed markers showing real-time availability."
+            description="Visualize properties on an interactive map with real-time data and location markers"
           />
           <FeatureCard
             icon={BarChart3}
             title="Advanced Analytics"
-            description="Compare locations with comprehensive statistics, price trends, and neighborhood insights to make informed decisions."
-          />
-          <FeatureCard
-            icon={Search}
-            title="Smart Search"
-            description="Filter by location, price range, property type, and amenities to find exactly what you're looking for."
+            description="Compare locations with detailed charts and comprehensive market insights"
           />
           <FeatureCard
             icon={Filter}
-            title="Dynamic Filters"
-            description="Refine your search with powerful filters including BHK configuration, rent range, and location preferences."
+            title="Smart Filters"
+            description="Filter by location, price range, BHK type, and more to find your perfect match"
+          />
+          <FeatureCard
+            icon={TrendingUp}
+            title="Price Trends"
+            description="Track rental price trends and distribution across different areas"
           />
           <FeatureCard
             icon={Bell}
-            title="Price Alerts"
-            description="Get notified when properties matching your criteria become available or prices change in your favorite areas."
+            title="Real-Time Updates"
+            description="Get instant updates on new listings and price changes in your preferred areas"
           />
           <FeatureCard
             icon={Zap}
-            title="Real-Time Updates"
-            description="Access the latest market data with instant updates on new listings, price changes, and market trends."
+            title="Quick Search"
+            description="Find properties instantly with our lightning-fast search and filtering system"
           />
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="container mx-auto px-4 py-16">
-        <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-r from-primary/20 via-accent/20 to-secondary/20 p-12 text-center backdrop-blur-xl">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(74,140,255,0.15),transparent)]" />
-          <div className="relative">
-            <h2 className="mb-4 text-4xl font-bold text-foreground">Ready to find your perfect home?</h2>
-            <p className="mx-auto mb-8 max-w-xl text-lg text-muted-foreground">
-              Start exploring thousands of rental properties with our advanced search and comparison tools.
-            </p>
-            <Button asChild size="lg" className="rounded-full bg-primary font-semibold text-primary-foreground shadow-xl transition-all hover:scale-105 hover:shadow-primary/50">
-              <Link to="/explorer">
-                <Zap className="mr-2 h-5 w-5" />
-                Get Started Now
-              </Link>
-            </Button>
-          </div>
+        <div className="overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10 p-12 text-center backdrop-blur-xl">
+          <h2 className="mb-4 text-4xl font-bold text-gradient">Ready to Find Your Dream Home?</h2>
+          <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground">
+            Start exploring thousands of rental properties with our powerful visualization tools
+          </p>
+          <Button asChild size="lg" className="rounded-full bg-primary font-semibold text-primary-foreground shadow-lg transition-all hover:scale-105 hover:shadow-primary/50">
+            <Link to="/explorer">
+              <Search className="mr-2 h-5 w-5" />
+              Start Exploring
+            </Link>
+          </Button>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border/40 bg-card/30 py-8 backdrop-blur-xl">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© 2024 RentMap. All rights reserved. Real-time rental market explorer.</p>
-        </div>
-      </footer>
     </div>
   );
 };
