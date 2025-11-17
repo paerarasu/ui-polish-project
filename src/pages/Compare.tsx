@@ -1,102 +1,62 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, TrendingUp, Home, DollarSign, Maximize, Loader2 } from "lucide-react";
+import { MapPin, Home, TrendingUp, Users, DollarSign, Building } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
-import { usePropertyData } from "@/hooks/usePropertyData";
+
+const locationData = {
+  "South Delhi": {
+    avgRent: 52000,
+    properties: 847,
+    avgSize: 1450,
+    safety: 4.5,
+    transport: 4.7,
+    amenities: 4.8,
+    popular: "Hauz Khas, GK, Saket",
+  },
+  "North Delhi": {
+    avgRent: 28000,
+    properties: 623,
+    avgSize: 1200,
+    safety: 4.0,
+    transport: 4.2,
+    amenities: 3.9,
+    popular: "Model Town, Pitampura",
+  },
+  "Central Delhi": {
+    avgRent: 45000,
+    properties: 412,
+    avgSize: 1100,
+    safety: 4.3,
+    transport: 4.9,
+    amenities: 4.5,
+    popular: "Connaught Place, Karol Bagh",
+  },
+};
+
+const comparisonMetrics = [
+  { metric: "Safety", southDelhi: 4.5, northDelhi: 4.0, centralDelhi: 4.3 },
+  { metric: "Transport", southDelhi: 4.7, northDelhi: 4.2, centralDelhi: 4.9 },
+  { metric: "Amenities", southDelhi: 4.8, northDelhi: 3.9, centralDelhi: 4.5 },
+  { metric: "Price Value", southDelhi: 3.8, northDelhi: 4.5, centralDelhi: 4.0 },
+  { metric: "Connectivity", southDelhi: 4.6, northDelhi: 4.1, centralDelhi: 4.8 },
+];
+
+const radarData = [
+  { subject: "Safety", A: 90, B: 80, fullMark: 100 },
+  { subject: "Transport", A: 94, B: 84, fullMark: 100 },
+  { subject: "Amenities", A: 96, B: 78, fullMark: 100 },
+  { subject: "Value", A: 76, B: 90, fullMark: 100 },
+  { subject: "Connectivity", A: 92, B: 82, fullMark: 100 },
+];
 
 const Compare = () => {
-  const { properties, loading, error } = usePropertyData();
-  const [location1, setLocation1] = useState("");
-  const [location2, setLocation2] = useState("");
+  const [location1, setLocation1] = useState("South Delhi");
+  const [location2, setLocation2] = useState("North Delhi");
 
-  const uniqueLocations = useMemo(() => {
-    return Array.from(new Set(properties.map(p => p.location))).sort();
-  }, [properties]);
-
-  const location1Data = useMemo(() => {
-    return properties.filter(p => p.location === location1);
-  }, [properties, location1]);
-
-  const location2Data = useMemo(() => {
-    return properties.filter(p => p.location === location2);
-  }, [properties, location2]);
-
-  const comparisonData = useMemo(() => {
-    if (!location1 || !location2) return [];
-
-    const avgPrice1 = location1Data.reduce((sum, p) => sum + p.price, 0) / location1Data.length || 0;
-    const avgPrice2 = location2Data.reduce((sum, p) => sum + p.price, 0) / location2Data.length || 0;
-
-    const avgArea1 = location1Data.reduce((sum, p) => sum + p.area_sqft, 0) / location1Data.length || 0;
-    const avgArea2 = location2Data.reduce((sum, p) => sum + p.area_sqft, 0) / location2Data.length || 0;
-
-    const avgPricePerSqft1 = location1Data.reduce((sum, p) => sum + p.price_per_sqft, 0) / location1Data.length || 0;
-    const avgPricePerSqft2 = location2Data.reduce((sum, p) => sum + p.price_per_sqft, 0) / location2Data.length || 0;
-
-    return [
-      {
-        metric: "Avg Rent (₹)",
-        [location1]: Math.round(avgPrice1),
-        [location2]: Math.round(avgPrice2),
-      },
-      {
-        metric: "Avg Area (sqft)",
-        [location1]: Math.round(avgArea1),
-        [location2]: Math.round(avgArea2),
-      },
-      {
-        metric: "₹/Sqft",
-        [location1]: Math.round(avgPricePerSqft1),
-        [location2]: Math.round(avgPricePerSqft2),
-      },
-    ];
-  }, [location1, location2, location1Data, location2Data]);
-
-  const radarData = useMemo(() => {
-    if (!location1 || !location2) return [];
-
-    const getScore = (data: typeof location1Data) => {
-      const avgPrice = data.reduce((sum, p) => sum + p.price, 0) / data.length || 0;
-      const avgArea = data.reduce((sum, p) => sum + p.area_sqft, 0) / data.length || 0;
-      const avgPricePerSqft = data.reduce((sum, p) => sum + p.price_per_sqft, 0) / data.length || 0;
-      const propertiesCount = data.length;
-
-      return {
-        affordability: Math.max(0, Math.min(100, 100 - (avgPrice / 1200))),
-        space: Math.min(100, (avgArea / 40)),
-        value: Math.max(0, Math.min(100, 100 - (avgPricePerSqft * 2.5))),
-        availability: Math.min(100, propertiesCount * 20),
-      };
-    };
-
-    const scores1 = getScore(location1Data);
-    const scores2 = getScore(location2Data);
-
-    return [
-      { category: "Affordability", [location1]: scores1.affordability, [location2]: scores2.affordability },
-      { category: "Space", [location1]: scores1.space, [location2]: scores2.space },
-      { category: "Value", [location1]: scores1.value, [location2]: scores2.value },
-      { category: "Availability", [location1]: scores1.availability, [location2]: scores2.availability },
-    ];
-  }, [location1, location2, location1Data, location2Data]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-destructive">Error loading data: {error}</p>
-      </div>
-    );
-  }
+  const data1 = locationData[location1 as keyof typeof locationData];
+  const data2 = locationData[location2 as keyof typeof locationData];
 
   return (
     <div className="min-h-screen bg-background">
@@ -108,155 +68,174 @@ const Compare = () => {
           <p className="text-lg text-muted-foreground">Analyze and compare different areas side by side</p>
         </div>
 
-        <div className="mb-8 grid gap-6 md:grid-cols-2">
-          <Card className="border-border/50 bg-card/60 p-6 backdrop-blur-xl">
-            <label className="mb-3 flex items-center gap-2 text-lg font-semibold text-secondary">
-              <MapPin className="h-5 w-5" />
-              Location 1
-            </label>
+        {/* Location Selectors */}
+        <div className="mb-8 grid gap-4 md:grid-cols-2">
+          <Card className="border-border/50 bg-card/60 p-4 backdrop-blur-xl">
+            <label className="mb-2 block text-sm font-semibold text-foreground">Location A</label>
             <Select value={location1} onValueChange={setLocation1}>
               <SelectTrigger className="border-border/50 bg-muted">
-                <SelectValue placeholder="Select first location" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {uniqueLocations.map(loc => (
-                  <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-                ))}
+                <SelectItem value="South Delhi">South Delhi</SelectItem>
+                <SelectItem value="North Delhi">North Delhi</SelectItem>
+                <SelectItem value="Central Delhi">Central Delhi</SelectItem>
               </SelectContent>
             </Select>
-            {location1 && (
-              <div className="mt-4 space-y-3 rounded-lg bg-muted/50 p-4">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Home className="h-4 w-4" /> Properties:
-                  </span>
-                  <span className="font-semibold text-foreground">{location1Data.length}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <DollarSign className="h-4 w-4" /> Avg Rent:
-                  </span>
-                  <span className="font-semibold text-foreground">
-                    ₹{Math.round(location1Data.reduce((sum, p) => sum + p.price, 0) / location1Data.length || 0).toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Maximize className="h-4 w-4" /> Avg Area:
-                  </span>
-                  <span className="font-semibold text-foreground">
-                    {Math.round(location1Data.reduce((sum, p) => sum + p.area_sqft, 0) / location1Data.length || 0)} sqft
-                  </span>
-                </div>
-              </div>
-            )}
           </Card>
 
-          <Card className="border-border/50 bg-card/60 p-6 backdrop-blur-xl">
-            <label className="mb-3 flex items-center gap-2 text-lg font-semibold text-secondary">
-              <MapPin className="h-5 w-5" />
-              Location 2
-            </label>
+          <Card className="border-border/50 bg-card/60 p-4 backdrop-blur-xl">
+            <label className="mb-2 block text-sm font-semibold text-foreground">Location B</label>
             <Select value={location2} onValueChange={setLocation2}>
               <SelectTrigger className="border-border/50 bg-muted">
-                <SelectValue placeholder="Select second location" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {uniqueLocations.map(loc => (
-                  <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-                ))}
+                <SelectItem value="South Delhi">South Delhi</SelectItem>
+                <SelectItem value="North Delhi">North Delhi</SelectItem>
+                <SelectItem value="Central Delhi">Central Delhi</SelectItem>
               </SelectContent>
             </Select>
-            {location2 && (
-              <div className="mt-4 space-y-3 rounded-lg bg-muted/50 p-4">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Home className="h-4 w-4" /> Properties:
-                  </span>
-                  <span className="font-semibold text-foreground">{location2Data.length}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <DollarSign className="h-4 w-4" /> Avg Rent:
-                  </span>
-                  <span className="font-semibold text-foreground">
-                    ₹{Math.round(location2Data.reduce((sum, p) => sum + p.price, 0) / location2Data.length || 0).toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Maximize className="h-4 w-4" /> Avg Area:
-                  </span>
-                  <span className="font-semibold text-foreground">
-                    {Math.round(location2Data.reduce((sum, p) => sum + p.area_sqft, 0) / location2Data.length || 0)} sqft
-                  </span>
-                </div>
-              </div>
-            )}
           </Card>
         </div>
 
-        {location1 && location2 && (
-          <div className="space-y-6">
-            <Card className="border-border/50 bg-card/60 p-6 backdrop-blur-xl">
-              <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-secondary">
-                <TrendingUp className="h-5 w-5" />
-                Metrics Comparison
-              </h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={comparisonData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="metric" stroke="#B8C5D6" />
-                  <YAxis stroke="#B8C5D6" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'rgba(30, 41, 82, 0.95)',
-                      border: '1px solid rgba(74, 140, 255, 0.3)',
-                      borderRadius: '12px',
-                      color: '#F9FAFB'
-                    }}
-                  />
-                  <Legend />
-                  <Bar dataKey={location1} fill="#4A8CFF" radius={[8, 8, 0, 0]} />
-                  <Bar dataKey={location2} fill="#00D9FF" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card>
+        {/* Comparison Cards */}
+        <div className="mb-8 grid gap-6 md:grid-cols-2">
+          {/* Location 1 Card */}
+          <Card className="relative overflow-hidden border-primary/30 bg-gradient-to-br from-primary/15 to-accent/15 backdrop-blur-xl transition-all hover:-translate-y-2 hover:shadow-2xl hover:shadow-primary/30">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary to-accent" />
+            <div className="p-8">
+              <h2 className="mb-6 text-center text-2xl font-bold text-foreground">{location1}</h2>
+              
+              <div className="mb-6 rounded-xl bg-primary/10 p-6 text-center">
+                <p className="mb-1 text-sm font-medium text-muted-foreground">Average Rent</p>
+                <p className="text-4xl font-bold text-primary">₹{data1.avgRent.toLocaleString()}</p>
+              </div>
 
-            <Card className="border-border/50 bg-card/60 p-6 backdrop-blur-xl">
-              <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-secondary">
-                <Home className="h-5 w-5" />
-                Overall Comparison Score
-              </h3>
-              <ResponsiveContainer width="100%" height={400}>
-                <RadarChart data={radarData}>
-                  <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                  <PolarAngleAxis dataKey="category" stroke="#B8C5D6" />
-                  <PolarRadiusAxis stroke="#B8C5D6" />
-                  <Radar name={location1} dataKey={location1} stroke="#4A8CFF" fill="#4A8CFF" fillOpacity={0.6} />
-                  <Radar name={location2} dataKey={location2} stroke="#00D9FF" fill="#00D9FF" fillOpacity={0.6} />
-                  <Legend />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'rgba(30, 41, 82, 0.95)',
-                      border: '1px solid rgba(74, 140, 255, 0.3)',
-                      borderRadius: '12px',
-                      color: '#F9FAFB'
-                    }}
-                  />
-                </RadarChart>
-              </ResponsiveContainer>
-            </Card>
-          </div>
-        )}
-
-        {(!location1 || !location2) && (
-          <Card className="border-border/50 bg-card/60 p-12 backdrop-blur-xl text-center">
-            <MapPin className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
-            <h3 className="mb-2 text-xl font-semibold text-foreground">Select Locations to Compare</h3>
-            <p className="text-muted-foreground">Choose two locations from the dropdowns above to see detailed comparisons</p>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-border/30 pb-3">
+                  <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Home className="h-4 w-4" /> Properties
+                  </span>
+                  <span className="text-lg font-bold text-primary">{data1.properties}</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-border/30 pb-3">
+                  <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Building className="h-4 w-4" /> Avg Size
+                  </span>
+                  <span className="text-lg font-bold text-primary">{data1.avgSize} sq.ft</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-border/30 pb-3">
+                  <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <TrendingUp className="h-4 w-4" /> Transport
+                  </span>
+                  <span className="text-lg font-bold text-primary">{data1.transport}/5</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <MapPin className="h-4 w-4" /> Popular Areas
+                  </span>
+                  <span className="text-right text-sm font-semibold text-foreground">{data1.popular}</span>
+                </div>
+              </div>
+            </div>
           </Card>
-        )}
+
+          {/* Location 2 Card */}
+          <Card className="relative overflow-hidden border-secondary/30 bg-gradient-to-br from-secondary/15 to-accent/15 backdrop-blur-xl transition-all hover:-translate-y-2 hover:shadow-2xl hover:shadow-secondary/30">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-secondary to-accent" />
+            <div className="p-8">
+              <h2 className="mb-6 text-center text-2xl font-bold text-foreground">{location2}</h2>
+              
+              <div className="mb-6 rounded-xl bg-secondary/10 p-6 text-center">
+                <p className="mb-1 text-sm font-medium text-muted-foreground">Average Rent</p>
+                <p className="text-4xl font-bold text-secondary">₹{data2.avgRent.toLocaleString()}</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-border/30 pb-3">
+                  <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Home className="h-4 w-4" /> Properties
+                  </span>
+                  <span className="text-lg font-bold text-secondary">{data2.properties}</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-border/30 pb-3">
+                  <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Building className="h-4 w-4" /> Avg Size
+                  </span>
+                  <span className="text-lg font-bold text-secondary">{data2.avgSize} sq.ft</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-border/30 pb-3">
+                  <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <TrendingUp className="h-4 w-4" /> Transport
+                  </span>
+                  <span className="text-lg font-bold text-secondary">{data2.transport}/5</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <MapPin className="h-4 w-4" /> Popular Areas
+                  </span>
+                  <span className="text-right text-sm font-semibold text-foreground">{data2.popular}</span>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Comparison Charts */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Bar Chart Comparison */}
+          <Card className="border-border/50 bg-card/60 p-6 backdrop-blur-xl">
+            <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-secondary">
+              <BarChart className="h-5 w-5" />
+              Rating Comparison
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={comparisonMetrics}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                <XAxis dataKey="metric" stroke="#B8C5D6" style={{ fontSize: '11px' }} />
+                <YAxis stroke="#B8C5D6" style={{ fontSize: '12px' }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'rgba(30, 41, 82, 0.95)',
+                    border: '1px solid rgba(74, 140, 255, 0.3)',
+                    borderRadius: '12px',
+                    color: '#F9FAFB'
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="southDelhi" fill="#4A8CFF" name={location1} radius={[8, 8, 0, 0]} />
+                <Bar dataKey="northDelhi" fill="#F2D98D" name={location2} radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Card>
+
+          {/* Radar Chart */}
+          <Card className="border-border/50 bg-card/60 p-6 backdrop-blur-xl">
+            <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-secondary">
+              <TrendingUp className="h-5 w-5" />
+              Overall Performance
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <RadarChart data={radarData}>
+                <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                <PolarAngleAxis dataKey="subject" stroke="#B8C5D6" style={{ fontSize: '12px' }} />
+                <PolarRadiusAxis stroke="#B8C5D6" />
+                <Radar name={location1} dataKey="A" stroke="#4A8CFF" fill="#4A8CFF" fillOpacity={0.5} />
+                <Radar name={location2} dataKey="B" stroke="#F2D98D" fill="#F2D98D" fillOpacity={0.5} />
+                <Legend />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'rgba(30, 41, 82, 0.95)',
+                    border: '1px solid rgba(74, 140, 255, 0.3)',
+                    borderRadius: '12px',
+                    color: '#F9FAFB'
+                  }}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </Card>
+        </div>
       </div>
     </div>
   );
