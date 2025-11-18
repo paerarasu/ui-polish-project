@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,26 +6,61 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MapPin, Home, TrendingUp, DollarSign, Filter, Search } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import MapboxMap from "@/components/MapboxMap";
+import { properties as allProperties } from "@/data/properties";
 
-const rentDistribution = [
-  { range: "0-20k", count: 450 },
-  { range: "20-40k", count: 890 },
-  { range: "40-60k", count: 670 },
-  { range: "60-80k", count: 340 },
-  { range: "80k+", count: 197 },
-];
-
-const bhkDistribution = [
-  { name: "1 BHK", value: 35, color: "#4A8CFF" },
-  { name: "2 BHK", value: 40, color: "#00D9FF" },
-  { name: "3 BHK", value: 20, color: "#7C4DFF" },
-  { name: "4+ BHK", value: 5, color: "#F2D98D" },
-];
 
 const Explorer = () => {
   const [rentRange, setRentRange] = useState([10000, 80000]);
   const [location, setLocation] = useState("all");
   const [bhkType, setBhkType] = useState("all");
+
+  // Filter properties based on current filters
+  const filteredProperties = useMemo(() => {
+    return allProperties.filter(property => {
+      const matchesRent = property.price >= rentRange[0] && property.price <= rentRange[1];
+      const matchesLocation = location === "all" || 
+        property.location.toLowerCase().includes(location.toLowerCase());
+      const matchesBhk = bhkType === "all" || property.bhk.toString() === bhkType;
+      
+      return matchesRent && matchesLocation && matchesBhk;
+    });
+  }, [rentRange, location, bhkType]);
+
+  // Update chart data based on filtered properties
+  const rentDistribution = useMemo(() => {
+    const ranges = [
+      { range: "0-20k", count: 0, min: 0, max: 20000 },
+      { range: "20-40k", count: 0, min: 20000, max: 40000 },
+      { range: "40-60k", count: 0, min: 40000, max: 60000 },
+      { range: "60-80k", count: 0, min: 60000, max: 80000 },
+      { range: "80k+", count: 0, min: 80000, max: 999999 },
+    ];
+    
+    filteredProperties.forEach(prop => {
+      const range = ranges.find(r => prop.price >= r.min && prop.price < r.max);
+      if (range) range.count++;
+    });
+    
+    return ranges;
+  }, [filteredProperties]);
+
+  const bhkDistribution = useMemo(() => {
+    const bhkCounts: Record<string, number> = { "1": 0, "2": 0, "3": 0, "4+": 0 };
+    
+    filteredProperties.forEach(prop => {
+      const key = prop.bhk >= 4 ? "4+" : prop.bhk.toString();
+      bhkCounts[key]++;
+    });
+    
+    const total = filteredProperties.length || 1;
+    return [
+      { name: "1 BHK", value: Math.round((bhkCounts["1"] / total) * 100), color: "#4A8CFF" },
+      { name: "2 BHK", value: Math.round((bhkCounts["2"] / total) * 100), color: "#00D9FF" },
+      { name: "3 BHK", value: Math.round((bhkCounts["3"] / total) * 100), color: "#7C4DFF" },
+      { name: "4+ BHK", value: Math.round((bhkCounts["4+"] / total) * 100), color: "#F2D98D" },
+    ];
+  }, [filteredProperties]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -33,12 +68,14 @@ const Explorer = () => {
       
       <div className="container mx-auto px-4 py-8">
         {/* Status Badge */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="inline-flex items-center gap-2 rounded-full border border-secondary/30 bg-secondary/10 px-4 py-2">
-            <div className="h-2 w-2 animate-pulse rounded-full bg-secondary" />
-            <span className="text-sm font-semibold text-secondary">Live Data - Updated 2 mins ago</span>
+          <div className="mb-6 flex items-center justify-between">
+            <div className="inline-flex items-center gap-2 rounded-full border border-secondary/30 bg-secondary/10 px-4 py-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-secondary" />
+              <span className="text-sm font-semibold text-secondary">
+                {filteredProperties.length} Properties Found - Live Filtering
+              </span>
+            </div>
           </div>
-        </div>
 
         <div className="grid gap-6 lg:grid-cols-4">
           {/* Sidebar Filters */}
@@ -61,11 +98,11 @@ const Explorer = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Locations</SelectItem>
-                      <SelectItem value="south">South Delhi</SelectItem>
-                      <SelectItem value="north">North Delhi</SelectItem>
-                      <SelectItem value="central">Central Delhi</SelectItem>
-                      <SelectItem value="east">East Delhi</SelectItem>
-                      <SelectItem value="west">West Delhi</SelectItem>
+                      <SelectItem value="south delhi">South Delhi</SelectItem>
+                      <SelectItem value="north delhi">North Delhi</SelectItem>
+                      <SelectItem value="central delhi">Central Delhi</SelectItem>
+                      <SelectItem value="east delhi">East Delhi</SelectItem>
+                      <SelectItem value="west delhi">West Delhi</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -101,11 +138,11 @@ const Explorer = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="all">All BHK Types</SelectItem>
                       <SelectItem value="1">1 BHK</SelectItem>
                       <SelectItem value="2">2 BHK</SelectItem>
                       <SelectItem value="3">3 BHK</SelectItem>
-                      <SelectItem value="4">4+ BHK</SelectItem>
+                      <SelectItem value="4">4 BHK</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -122,16 +159,17 @@ const Explorer = () => {
           <div className="space-y-6 lg:col-span-3">
             {/* Map Section */}
             <Card className="border-border/50 bg-card/60 p-6 backdrop-blur-xl">
-              <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-secondary">
-                <MapPin className="h-5 w-5" />
-                Interactive Map
-              </h3>
-              <div className="flex h-[400px] items-center justify-center rounded-xl bg-muted/50">
-                <div className="text-center">
-                  <MapPin className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
-                  <p className="text-lg font-semibold text-muted-foreground">Map Visualization</p>
-                  <p className="text-sm text-muted-foreground">Interactive map would be displayed here</p>
-                </div>
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="flex items-center gap-2 text-xl font-bold text-secondary">
+                  <MapPin className="h-5 w-5" />
+                  Interactive Map
+                </h3>
+                <span className="text-sm text-muted-foreground">
+                  {filteredProperties.length} properties shown
+                </span>
+              </div>
+              <div className="h-[500px]">
+                <MapboxMap properties={filteredProperties} />
               </div>
             </Card>
 
